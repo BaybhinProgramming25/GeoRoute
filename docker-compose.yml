@@ -1,0 +1,29 @@
+services:
+  postgres:
+    image: postgres:latest
+    container_name: travel_postgres
+    command:
+      - "postgres"
+      - "-c"
+      - "shared_buffers=256MB"
+      - "-c"
+      - "max_connections=100"
+      - "-c"
+      - "work_mem=16MB"
+      - "-c"
+      - "maintenance_work_mem=128MB"
+    env_file:
+      - backend/.env
+    ports:
+      - "5433:5432" # For now we will keep this exposed
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    restart: unless-stopped
+    networks:
+      - travel
+
+volumes:
+  postgres_data:
+networks:
+  travel:
+    

@@ -1,39 +1,84 @@
-using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
+using EZTravel.Models;
+using EZTravel.Services;
+
+namespace EZTravel.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
-public class AuthController : ControllerBase
+[Route("api")]
+public class AuthController(UserService userService, TokenService tokenService) : ControllerBase
 {
-    private readonly TokenService _tokenService;
-
-    public AuthController(TokenService tokenService)
+    [HttpPost("signup")]
+    public async Task<IActionResult> Signup([FromBody] SignupRequest req)
     {
-        _tokenService = tokenService;
+        if (await userService.GetByEmailAsync(req.Email) != null)
+            return Conflict(new { message = "Email already in use" });
+
+        var hashed = BCrypt.Net.BCrypt.HashPassword(req.Password);
+        var user = await userService.CreateAsync(req.Username, req.Email, hashed);
+
+        var accessToken = tokenService.GenerateAccessToken(user);
+        var refreshToken = tokenService.GenerateRefreshToken(user);
+        await userService.SaveRefreshTokenAsync(user.Id, refreshToken);
+
+        SetRefreshCookie(refreshToken);
+        return Ok(new AuthResponse(accessToken, new UserDto(user.Id, user.Username, user.Email)));
     }
 
-    [HttpPost]
-    public ActionResult<string> Login(LoginRequest request)
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] LoginRequest req)
     {
-        // Hardcoded testing
-        // 1 is a placeholder for the user ID that we get from the database
-        if (request.Email == "test@test.com" && request.Password == "password")
+        var user = await userService.GetByEmailAsync(req.Email);
+        if (user == null || !BCrypt.Net.BCrypt.Verify(req.Password, user.Password))
+            return Unauthorized(new { message = "Invalid credentials" });
+
+        var accessToken = tokenService.GenerateAccessToken(user);
+        var refreshToken = tokenService.GenerateRefreshToken(user);
+        await userService.SaveRefreshTokenAsync(user.Id, refreshToken);
+
+        SetRefreshCookie(refreshToken);
+        return Ok(new AuthResponse(accessToken, new UserDto(user.Id, user.Username, user.Email)));
+    }
+
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh()
+    {
+        var token = Request.Cookies["refreshToken"];
+        if (string.IsNullOrEmpty(token)) return Unauthorized(new { message = "No refresh token" });
+
+        var principal = tokenService.ValidateRefreshToken(token);
+        if (principal == null) return Unauthorized(new { message = "Invalid refresh token" });
+
+        var user = await userService.GetByRefreshTokenAsync(token);
+        if (user == null) return Unauthorized(new { message = "Token not recognised" });
+
+        var newAccess = tokenService.GenerateAccessToken(user);
+        var newRefresh = tokenService.GenerateRefreshToken(user);
+        await userService.SaveRefreshTokenAsync(user.Id, newRefresh);
+
+        SetRefreshCookie(newRefresh);
+        return Ok(new AuthResponse(newAccess, new UserDto(user.Id, user.Username, user.Email)));
+    }
+
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout()
+    {
+        var token = Request.Cookies["refreshToken"];
+        if (!string.IsNullOrEmpty(token))
         {
-            var token = _tokenService.GenerateToken("1", request.Email);
-            return Ok(new {token});
+            var user = await userService.GetByRefreshTokenAsync(token);
+            if (user != null) await userService.SaveRefreshTokenAsync(user.Id, null);
         }
-        
-        return Unauthorized();
+        Response.Cookies.Delete("refreshToken");
+        return Ok(new { message = "Logged out" });
     }
 
-    [HttpPost]
-    public ActionResult<string> Signup(SignupRequest request)
-    {
-        // 1 is a placeholder for the user id 
-        var token = _tokenService.GenerateToken("1", request.Email);
-        return Ok(new { token });
-    }
+    private void SetRefreshCookie(string token) =>
+        Response.Cookies.Append("refreshToken", token, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = false,
+            SameSite = SameSiteMode.Strict,
+            Expires = DateTimeOffset.UtcNow.AddDays(7),
+        });
 }
-
-public record LoginRequest(string Email, string Password);
-public record SignupRequest(string Firstname, string Lastname, string Email, string Password);

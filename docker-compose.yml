@@ -1,7 +1,35 @@
 services:
+
+  frontend:
+    image: tinymaps-frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    networks:
+      - eztravel
+
+  backend:
+    image: tinymaps-backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - eztravel
+
   postgres:
     image: postgres:latest
-    container_name: travel_postgres
+    container_name: tinymaps_postgres
     command:
       - "postgres"
       - "-c"
@@ -12,18 +40,50 @@ services:
       - "work_mem=16MB"
       - "-c"
       - "maintenance_work_mem=128MB"
+    ports:
+      - "5431:5432"
     env_file:
       - backend/.env
-    ports:
-      - "5433:5432" # For now we will keep this exposed
     volumes:
-      - postgres_data:/var/lib/postgresql
+      - postgres-data:/var/lib/postgresql
+      - ./backend/db/init.sql:/docker-entrypoint-initdb.d/init.sql
     restart: unless-stopped
     networks:
-      - travel
+      - eztravel
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - eztravel
+
+  tileserver:
+    image: overv/openstreetmap-tile-server
+    command: run
+    ports:
+      - "8080:80"
+    volumes:
+      - osm-data:/data/database
+    networks:
+      - eztravel
+
+  osm-import:
+    image: overv/openstreetmap-tile-server
+    command: import
+    volumes:
+      - ./data/region.osm.pbf:/data/region.osm.pbf
+      - osm-data:/data/database
+    profiles:
+      - import
+    networks:
+      - eztravel
 
 volumes:
-  postgres_data:
+  postgres-data:
+  redis-data:
+  osm-data:
 networks:
-  travel:
-    
+  eztravel:

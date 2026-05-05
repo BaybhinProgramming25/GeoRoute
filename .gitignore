@@ -7,3 +7,6 @@ backend/appsettings.Development.json
 # Ignore envs
 */.env
 .env
+
+# Ignore data
+data/ 

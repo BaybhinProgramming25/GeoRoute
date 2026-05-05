@@ -1,46 +1,47 @@
+using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.EntityFrameworkCore;
-using System.Text;
+using StackExchange.Redis; 
+using EZTravel.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Configuration.AddJsonFile("appsettings.secrets.json", optional: true);
 
-builder.Services.AddOpenApi();
 builder.Services.AddControllers();
 
-// JWT 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+builder.Services.AddCors(options => 
+    options.AddDefaultPolicy(policy => 
+        policy.WithOrigins("http://localhost:5173").AllowAnyHeader().AllowAnyMethod().AllowCredentials()));
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme) 
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)
-            )
+            ValidateIssuerSigningKey = true, 
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["ACCESS_TOKEN_SECRET"]!)),
+            ValidateIssuer = false, 
+            ValidateAudience = false, 
+            ClockSkew = TimeSpan.Zero
+
         };
     });
+
 builder.Services.AddAuthorization();
+
+builder.Services.AddSingleton<IConnectionMultiplexer>(_ => 
+    ConnectionMultiplexer.Connect($"{builder.Configuration["REDIS_HOST"]}:{builder.Configuration["REDIS_PORT"]}"));
+
+builder.Services.AddScoped<IDatabase>(sp => 
+    sp.GetRequiredService<IConnectionMultiplexer>().GetDatabase());
+
+builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<TokenService>();
-
-// Database 
-builder.Services.AddDbContext<AppDbContext>(options => 
-    options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
-
+builder.Services.AddHttpClient();
 
 var app = builder.Build();
 
-
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
-
+app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

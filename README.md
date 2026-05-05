@@ -1,3 +1,3 @@
-# EZ-Travel
+# SimpleMaps
 
 In development...

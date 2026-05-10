@@ -4,7 +4,8 @@ import L from 'leaflet';
 import axios from 'axios';
 import 'leaflet/dist/leaflet.css';
 
-import { useAuth } from '../../contexts/AuthContext.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
+import api from '../../api';
 import './Dashboard.css';
 
 const formatDuration = (seconds) => {
@@ -41,17 +42,21 @@ const nearestStepIndex = (geometry, steps, userLat, userLon) => {
   return 0;
 };
 
-const RouteLayer = ({ routeData, userPos }) => {
+const RouteLayer = ({ routeData, pins, userPos }) => {
   const map = useMap();
   const userMarkerRef = useRef(null);
 
   useEffect(() => {
     if (!routeData?.geometry?.length) return;
 
-    const coords = routeData.geometry.map(p => [p.lat, p.lon]);
+    const coords = [
+      [pins.source.lat, pins.source.lon],
+      ...routeData.geometry.map(p => [p.lat, p.lon]),
+      [pins.dest.lat, pins.dest.lon],
+    ];
     const polyline = L.polyline(coords, { color: '#1d4ed8', weight: 4, opacity: 0.8 }).addTo(map);
-    const startMarker = L.circleMarker(coords[0], { radius: 8, fillColor: '#22c55e', color: '#fff', weight: 2, fillOpacity: 1 }).addTo(map);
-    const endMarker = L.circleMarker(coords[coords.length - 1], { radius: 8, fillColor: '#ef4444', color: '#fff', weight: 2, fillOpacity: 1 }).addTo(map);
+    const startMarker = L.circleMarker([pins.source.lat, pins.source.lon], { radius: 8, fillColor: '#22c55e', color: '#fff', weight: 2, fillOpacity: 1 }).addTo(map);
+    const endMarker = L.circleMarker([pins.dest.lat, pins.dest.lon], { radius: 8, fillColor: '#ef4444', color: '#fff', weight: 2, fillOpacity: 1 }).addTo(map);
 
     map.fitBounds(coords);
 
@@ -88,6 +93,7 @@ const Dashboard = () => {
   const [start, setStart] = useState('');
   const [destination, setDestination] = useState('');
   const [routeData, setRouteData] = useState(null);
+  const [pins, setPins] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -104,12 +110,9 @@ const Dashboard = () => {
 
     try {
       const [source, dest] = await Promise.all([geocode(start), geocode(destination)]);
-      const response = await axios.post(
-        'http://localhost:8000/api/route',
-        { source, destination: dest, mode },
-        { headers: { Authorization: `Bearer ${accessToken}` } }
-      );
+      const response = await api.post('/api/testroute', { source, destination: dest, mode });
       setRouteData(response.data);
+      setPins({ source, dest });
       setCurrentStep(0);
     } catch (err) {
       setError(err.message || err.response?.data?.message || 'Failed to get route');
@@ -223,8 +226,8 @@ const Dashboard = () => {
 
         <div className='dashboard-sidebar-bottom'>
           <div className='sidebar-user'>
-            <div className='sidebar-avatar'>{user?.username?.[0].toUpperCase()}</div>
-            <span className='sidebar-username'>{user?.username}</span>
+            <div className='sidebar-avatar'>{user?.firstname?.[0].toUpperCase()}</div>
+            <span className='sidebar-username'>{user?.firstname}</span>
           </div>
           <button className='sidebar-logout' onClick={logout}>Logout</button>
         </div>
@@ -233,10 +236,10 @@ const Dashboard = () => {
       <div className='dashboard-map'>
         <MapContainer center={[40.7128, -74.0060]} zoom={12} style={{ height: '100%', width: '100%' }}>
           <TileLayer
-            url='http://localhost:8080/tile/{z}/{x}/{y}.png'
+            url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
             attribution='&copy; OpenStreetMap contributors'
           />
-          {routeData && <RouteLayer routeData={routeData} userPos={userPos} />}
+          {routeData && pins && <RouteLayer routeData={routeData} pins={pins} userPos={userPos} />}
         </MapContainer>
       </div>
     </div>

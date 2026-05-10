@@ -8,8 +8,8 @@ namespace EZTravel.Services;
 
 public class TokenService(IConfiguration config)
 {
-    private readonly string _accessSecret = config["ACCESS_TOKEN_SECRET"]!;
-    private readonly string _refreshSecret = config["REFRESH_TOKEN_SECRET"]!;
+    private readonly string _accessSecret = config["JWT:AccessSecret"]!;
+    private readonly string _refreshSecret = config["JWT:RefreshSecret"]!;
 
     public string GenerateAccessToken(User user)
     {

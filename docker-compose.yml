@@ -1,7 +1,8 @@
+name: simplemaps
 services:
 
   frontend:
-    image: tinymaps-frontend
+    image: simplemaps-frontend
     build:
       context: ./frontend
       dockerfile: Dockerfile
@@ -10,10 +11,10 @@ services:
     depends_on:
       - backend
     networks:
-      - eztravel
+      - simplemaps
 
   backend:
-    image: tinymaps-backend
+    image: simplemaps-backend
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -25,11 +26,11 @@ services:
       - postgres
       - redis
     networks:
-      - eztravel
+      - simplemaps
 
   postgres:
-    image: postgres:latest
-    container_name: tinymaps_postgres
+    image: pgrouting/pgrouting:latest
+    container_name: simplemaps_postgres
     command:
       - "postgres"
       - "-c"
@@ -41,7 +42,7 @@ services:
       - "-c"
       - "maintenance_work_mem=128MB"
     ports:
-      - "5431:5432"
+      - "5432:5432"
     env_file:
       - backend/.env
     volumes:
@@ -49,8 +50,24 @@ services:
       - ./backend/db/init.sql:/docker-entrypoint-initdb.d/init.sql
     restart: unless-stopped
     networks:
-      - eztravel
-
+      - simplemaps
+  
+  osm-routing-import:
+    image: iboates/osm2pgsql:latest
+    volumes:
+      - ./data/region.osm.pbf:/data/region.osm.pbf
+    env_file:
+      - ./backend/.env
+    environment:
+      - PGPASSWORD=${POSTGRES_PASSWORD}
+    command: osm2pgsql --slim -d routing_db -H postgres -U ezmapsuser /data/region.osm.pbf
+    depends_on:
+      - postgres
+    profiles:
+      - routing-import
+    networks:
+      - simplemaps
+      
   redis:
     image: redis:alpine
     ports:
@@ -58,32 +75,12 @@ services:
     volumes:
       - redis-data:/data
     networks:
-      - eztravel
+      - simplemaps
 
-  tileserver:
-    image: overv/openstreetmap-tile-server
-    command: run
-    ports:
-      - "8080:80"
-    volumes:
-      - osm-data:/data/database
-    networks:
-      - eztravel
-
-  osm-import:
-    image: overv/openstreetmap-tile-server
-    command: import
-    volumes:
-      - ./data/region.osm.pbf:/data/region.osm.pbf
-      - osm-data:/data/database
-    profiles:
-      - import
-    networks:
-      - eztravel
 
 volumes:
   postgres-data:
   redis-data:
   osm-data:
 networks:
-  eztravel:
+  simplemaps:

@@ -10,3 +10,6 @@ backend/appsettings.Development.json
 
 # Ignore data
 data/ 
+
+# Ignore testing
+testing/ 

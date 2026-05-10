@@ -5,9 +5,9 @@ const Home = () => {
   return (
     <div className="home-page">
       <section className="home-hero">
-        <h1 className="home-hero-title">Offline Walking & Cycling Navigation That Actually Works</h1>
+        <h1 className="home-hero-title">SimpleMaps</h1>
         <p className="home-hero-sub">
-          Tiny Maps lets you download map regions and get walking or cycling routes
+          Simple Maps lets you download map regions and get walking or cycling routes
           without any signal — something Google Maps still can't do.
         </p>
         <div className="home-hero-ctas">

@@ -1,44 +1,34 @@
 import { useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
-
-import { useAuth } from '../../contexts/AuthContext.jsx';
 import './Signup.css';
 
-const Signup = () => {
-  const { login } = useAuth();
+const SignUp = () => {
+
+  const { signup } = useAuth();
   const navigate = useNavigate();
 
-  const [username, setUsername] = useState('');
+  const [username, setUsername] = useState('')
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
+    setError('');
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError('Passwords do not match.');
       return;
     }
 
-    setLoading(true);
-
     try {
-      const response = await axios.post(
-        'http://localhost:5182/api/signup',
-        { username, email, password },
-        { withCredentials: true }
-      );
-      login(response.data.user, response.data.accessToken);
+      await signup(username, email, password);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.message || 'Something went wrong');
-    } finally {
-      setLoading(false);
+      const message = err.response?.data?.message || 'Error signing up. Please try again.';
+      setError(message);
     }
   };
 
@@ -46,12 +36,12 @@ const Signup = () => {
     <div className="auth-page">
       <div className="auth-card">
         <div className="auth-logo">
-          <span className="auth-logo-icon">TM</span>
-          <span className="auth-logo-text">Tiny Maps</span>
+          <span className="auth-logo-icon">SM</span>
+          <span className="auth-logo-text">SimpleMaps</span>
         </div>
 
         <h1 className="auth-title">Create account</h1>
-        <p className="auth-subtitle">Sign up to start using Tiny Maps</p>
+        <p className="auth-subtitle">Sign up to start using SimpleMaps</p>
 
         {error && <p className="auth-error">{error}</p>}
 
@@ -63,10 +53,11 @@ const Signup = () => {
               id="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="Choose a username"
+              placeholder="Enter a username"
               required
             />
           </div>
+       
           <div className="auth-field">
             <label htmlFor="email">Email</label>
             <input
@@ -78,6 +69,7 @@ const Signup = () => {
               required
             />
           </div>
+
           <div className="auth-field">
             <label htmlFor="password">Password</label>
             <input
@@ -89,6 +81,7 @@ const Signup = () => {
               required
             />
           </div>
+
           <div className="auth-field">
             <label htmlFor="confirmPassword">Confirm Password</label>
             <input
@@ -100,9 +93,8 @@ const Signup = () => {
               required
             />
           </div>
-          <button type="submit" className="auth-submit" disabled={loading}>
-            {loading ? 'Creating account...' : 'Sign Up'}
-          </button>
+
+          <button type="submit" className="auth-submit">Sign Up</button>
         </form>
 
         <p className="auth-switch">
@@ -113,4 +105,4 @@ const Signup = () => {
   );
 };
 
-export default Signup;
+export default SignUp;

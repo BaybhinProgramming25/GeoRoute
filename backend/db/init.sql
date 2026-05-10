@@ -1,0 +1,4 @@
+CREATE DATABASE routing_db;
+\c routing_db
+CREATE EXTENSION IF NOT EXISTS postgis;
+CREATE EXTENSION IF NOT EXISTS pgrouting;

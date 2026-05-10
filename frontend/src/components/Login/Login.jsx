@@ -1,36 +1,27 @@
 import { useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
-
-import { useAuth } from '../../contexts/AuthContext.jsx';
 import './Login.css';
 
 const Login = () => {
+
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
+    setError('');
 
     try {
-      const response = await axios.post(
-        'http://localhost:5182/api/login',
-        { email, password },
-        { withCredentials: true }
-      );
-      login(response.data.user, response.data.accessToken);
+      await login(email, password);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.message || 'Something went wrong');
-    } finally {
-      setLoading(false);
+      const message = err.response?.data?.message || 'Unable to login. Please try again.';
+      setError(message);
     }
   };
 
@@ -38,12 +29,12 @@ const Login = () => {
     <div className="auth-page">
       <div className="auth-card">
         <div className="auth-logo">
-          <span className="auth-logo-icon">TM</span>
-          <span className="auth-logo-text">Tiny Maps</span>
+          <span className="auth-logo-icon">SM</span>
+          <span className="auth-logo-text">SimpleMaps</span>
         </div>
 
         <h1 className="auth-title">Welcome back</h1>
-        <p className="auth-subtitle">Log in to your Tiny Maps account</p>
+        <p className="auth-subtitle">Log in to your SimpleMaps account</p>
 
         {error && <p className="auth-error">{error}</p>}
 
@@ -59,6 +50,7 @@ const Login = () => {
               required
             />
           </div>
+
           <div className="auth-field">
             <label htmlFor="password">Password</label>
             <input
@@ -70,9 +62,8 @@ const Login = () => {
               required
             />
           </div>
-          <button type="submit" className="auth-submit" disabled={loading}>
-            {loading ? 'Logging in...' : 'Log In'}
-          </button>
+
+          <button type="submit" className="auth-submit">Log In</button>
         </form>
 
         <p className="auth-switch">

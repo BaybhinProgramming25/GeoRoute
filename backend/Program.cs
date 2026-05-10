@@ -1,7 +1,9 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using StackExchange.Redis; 
+using StackExchange.Redis;
+using EZTravel.Configs;
 using EZTravel.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,7 +21,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true, 
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["ACCESS_TOKEN_SECRET"]!)),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWT:AccessSecret"]!)),
             ValidateIssuer = false, 
             ValidateAudience = false, 
             ClockSkew = TimeSpan.Zero
@@ -35,8 +37,14 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(_ =>
 builder.Services.AddScoped<IDatabase>(sp => 
     sp.GetRequiredService<IConnectionMultiplexer>().GetDatabase());
 
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(
+        Environment.GetEnvironmentVariable("CONNECTION_STRING")
+        ?? builder.Configuration.GetConnectionString("Postgres")));
+
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<TokenService>();
+builder.Services.AddScoped<RoutingService>();
 builder.Services.AddHttpClient();
 
 var app = builder.Build();

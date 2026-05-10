@@ -10,7 +10,7 @@ public class RoutingService(IConfiguration config)
         Environment.GetEnvironmentVariable("ROUTING_CONNECTION_STRING")
         ?? config.GetConnectionString("Routing")!;
 
-    public async Task<RouteResult> GetRoute(Coordinate source, Coordinate destination, string mode)
+    public async Task<RouteResult> GetRoute(Coordinate source, Coordinate destination)
     {
         await using var conn = new NpgsqlConnection(_connString);
         await conn.OpenAsync();
@@ -18,10 +18,7 @@ public class RoutingService(IConfiguration config)
         var sourceNode = await FindNearestNode(conn, source.Lat, source.Lon);
         var destNode = await FindNearestNode(conn, destination.Lat, destination.Lon);
 
-        var (geometry, steps, totalDistance) = await RunAStar(conn, sourceNode, destNode);
-
-        double speedMs = mode == "bike" ? 15000.0 / 3600 : 5000.0 / 3600;
-        double totalDuration = totalDistance / speedMs;
+        var (geometry, steps, totalDistance, totalDuration) = await RunAStar(conn, sourceNode, destNode);
 
         return new RouteResult(geometry, steps, totalDistance, totalDuration);
     }
@@ -48,7 +45,7 @@ public class RoutingService(IConfiguration config)
         return (long)result;
     }
 
-    private static async Task<(List<Coordinate>, List<RouteStep>, double)> RunAStar(NpgsqlConnection conn, long sourceNode, long destNode)
+    private static async Task<(List<Coordinate>, List<RouteStep>, double, double)> RunAStar(NpgsqlConnection conn, long sourceNode, long destNode)
     {
         const string sql = """
             SELECT
@@ -57,10 +54,11 @@ public class RoutingService(IConfiguration config)
                      ELSE ST_AsGeoJSON(ST_Reverse(w.geom))
                 END AS geojson,
                 r.cost,
-                w.name
+                w.name,
+                ST_Length(w.geom::geography) AS distance_m
             FROM pgr_aStar(
                 'SELECT id, source, target, cost, reverse_cost, x1, y1, x2, y2 FROM ways WHERE source != target',
-                @source, @dest, directed := false
+                @source, @dest, directed := true
             ) r
             JOIN ways w ON r.edge = w.id
             WHERE r.edge != -1
@@ -73,8 +71,10 @@ public class RoutingService(IConfiguration config)
 
         var geometry = new List<Coordinate>();
         var steps = new List<RouteStep>();
+        double totalDuration = 0;
         double totalDistance = 0;
         int coordIndex = 0;
+        List<Coordinate>? prevCoords = null;
 
         await using var reader = await cmd.ExecuteReaderAsync();
         while (await reader.ReadAsync())
@@ -82,24 +82,58 @@ public class RoutingService(IConfiguration config)
             var geoJson = reader.GetString(0);
             var cost = reader.GetDouble(1);
             var name = reader.IsDBNull(2) ? "Unnamed road" : reader.GetString(2);
+            var distanceM = reader.GetDouble(3);
 
             var coords = ParseGeoJsonCoords(geoJson);
             int startIndex = coordIndex;
             geometry.AddRange(coords);
             coordIndex += coords.Count;
-            totalDistance += cost;
+            totalDuration += cost;
+            totalDistance += distanceM;
 
-            var instruction = $"Continue on {name}";
+            var instruction = GetInstruction(prevCoords, coords, name);
             if (steps.Count > 0 && steps[^1].Instruction == instruction)
-                steps[^1] = new RouteStep(instruction, steps[^1].Distance + cost, [steps[^1].WayPoints[0], coordIndex - 1]);
+                steps[^1] = new RouteStep(instruction, steps[^1].Distance + distanceM, [steps[^1].WayPoints[0], coordIndex - 1]);
             else
-                steps.Add(new RouteStep(instruction, cost, [startIndex, coordIndex - 1]));
+                steps.Add(new RouteStep(instruction, distanceM, [startIndex, coordIndex - 1]));
+
+            prevCoords = coords;
         }
 
         if (geometry.Count == 0)
             throw new InvalidOperationException("No route found between the given locations.");
 
-        return (geometry, steps, totalDistance);
+        return (geometry, steps, totalDistance, totalDuration);
+    }
+
+    private static string GetInstruction(List<Coordinate>? prevCoords, List<Coordinate> currCoords, string roadName)
+    {
+        if (prevCoords == null || prevCoords.Count < 2 || currCoords.Count < 2)
+            return $"Continue on {roadName}";
+
+        var p0 = prevCoords[^2];
+        var p1 = prevCoords[^1];
+        var p2 = currCoords[0];
+        var p3 = currCoords[1];
+
+        double dx1 = p1.Lon - p0.Lon;
+        double dy1 = p1.Lat - p0.Lat;
+        double dx2 = p3.Lon - p2.Lon;
+        double dy2 = p3.Lat - p2.Lat;
+
+        double cross = dx1 * dy2 - dy1 * dx2;
+        double dot = dx1 * dx2 + dy1 * dy2;
+        double angle = Math.Atan2(cross, dot) * 180 / Math.PI;
+
+        return angle switch
+        {
+            > 150 or < -150 => $"Make a U-turn onto {roadName}",
+            > 45  => $"Turn left onto {roadName}",
+            > 15  => $"Keep left onto {roadName}",
+            < -45 => $"Turn right onto {roadName}",
+            < -15 => $"Keep right onto {roadName}",
+            _     => $"Continue on {roadName}",
+        };
     }
 
     private static List<Coordinate> ParseGeoJsonCoords(string geoJson)

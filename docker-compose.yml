@@ -60,7 +60,7 @@ services:
       - ./backend/.env
     environment:
       - PGPASSWORD=${POSTGRES_PASSWORD}
-    command: osm2pgsql --slim -d routing_db -H postgres -U ezmapsuser /data/region.osm.pbf
+    command: osm2pgsql --slim --hstore -d routing_db -H postgres -U ezmapsuser /data/region.osm.pbf
     depends_on:
       - postgres
     profiles:

@@ -226,8 +226,8 @@ const Dashboard = () => {
 
         <div className='dashboard-sidebar-bottom'>
           <div className='sidebar-user'>
-            <div className='sidebar-avatar'>{user?.firstname?.[0].toUpperCase()}</div>
-            <span className='sidebar-username'>{user?.firstname}</span>
+            <div className='sidebar-avatar'>{user?.username?.[0].toUpperCase()}</div>
+            <span className='sidebar-username'>{user?.username}</span>
           </div>
           <button className='sidebar-logout' onClick={logout}>Logout</button>
         </div>

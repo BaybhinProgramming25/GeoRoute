@@ -18,17 +18,14 @@ const Home = () => {
 
       <section className="home-features">
         <div className="home-feature-card">
-          <div className="home-feature-icon">🚗</div>
           <h2>Vehicle Routing</h2>
           <p>Fast car routes using A* pathfinding on real OpenStreetMap road data with one-way street support.</p>
         </div>
         <div className="home-feature-card">
-          <div className="home-feature-icon">🗺️</div>
           <h2>Self-Hosted</h2>
           <p>No third-party APIs. Routes are computed entirely on your own infrastructure using pgRouting and PostGIS.</p>
         </div>
         <div className="home-feature-card">
-          <div className="home-feature-icon">⚡</div>
           <h2>Redis Caching</h2>
           <p>Repeated routes are served in milliseconds from cache, keeping the routing engine fast under load.</p>
         </div>

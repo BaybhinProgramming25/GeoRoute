@@ -1,5 +1,7 @@
 using System.Text;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using StackExchange.Redis;
@@ -10,6 +12,18 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddJsonFile("appsettings.secrets.json", optional: true);
 
 builder.Services.AddControllers();
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("auth", o =>
+    {
+        o.PermitLimit = 10;
+        o.Window = TimeSpan.FromMinutes(1);
+        o.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        o.QueueLimit = 0;
+    });
+    options.RejectionStatusCode = 429;
+});
 
 builder.Services.AddCors(options => 
     options.AddDefaultPolicy(policy => 
@@ -50,6 +64,7 @@ builder.Services.AddHttpClient();
 var app = builder.Build();
 
 app.UseCors();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using EZTravel.Models;
 using EZTravel.Services;
 
@@ -9,6 +10,7 @@ namespace EZTravel.Controllers;
 public class AuthController(UserService userService, TokenService tokenService) : ControllerBase
 {
     [HttpPost("signup")]
+    [EnableRateLimiting("auth")]
     public async Task<IActionResult> Signup([FromBody] SignupRequest req)
     {
         if (await userService.GetByEmailAsync(req.Email) != null)
@@ -26,6 +28,7 @@ public class AuthController(UserService userService, TokenService tokenService) 
     }
 
     [HttpPost("login")]
+    [EnableRateLimiting("auth")]
     public async Task<IActionResult> Login([FromBody] LoginRequest req)
     {
         var user = await userService.GetByEmailAsync(req.Email);

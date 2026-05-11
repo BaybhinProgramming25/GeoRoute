@@ -29,7 +29,7 @@ const RouteLayer = ({ routeData, pins }) => {
       [pins.dest.lat, pins.dest.lon],
     ];
 
-    const polyline = L.polyline(coords, { color: '#1d4ed8', weight: 4, opacity: 0.8 }).addTo(map);
+    const polyline = L.polyline(coords, { color: '#a855f7', weight: 4, opacity: 0.8 }).addTo(map);
     const startMarker = L.circleMarker([pins.source.lat, pins.source.lon], { radius: 8, fillColor: '#22c55e', color: '#fff', weight: 2, fillOpacity: 1 }).addTo(map);
     const endMarker = L.circleMarker([pins.dest.lat, pins.dest.lon], { radius: 8, fillColor: '#ef4444', color: '#fff', weight: 2, fillOpacity: 1 }).addTo(map);
 
@@ -37,7 +37,7 @@ const RouteLayer = ({ routeData, pins }) => {
       const coord = routeData.geometry[step.wayPoints[0]];
       if (!coord) return null;
       return L.circleMarker([coord.lat, coord.lon], {
-        radius: 6, fillColor: '#fff', color: '#1d4ed8', weight: 2, fillOpacity: 1,
+        radius: 6, fillColor: '#fff', color: '#a855f7', weight: 2, fillOpacity: 1,
       })
         .bindTooltip(step.instruction, { permanent: false, direction: 'top' })
         .addTo(map);
@@ -115,6 +115,17 @@ const Dashboard = () => {
             <button className='route-submit' type='submit' disabled={loading}>
               {loading ? 'Getting route...' : 'Get Route'}
             </button>
+            {routeData && (
+              <button className='route-clear' type='button' onClick={() => {
+                setStart('');
+                setDestination('');
+                setRouteData(null);
+                setPins(null);
+                setError(null);
+              }}>
+                Clear
+              </button>
+            )}
           </form>
 
         </div>

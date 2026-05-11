@@ -16,10 +16,26 @@ public class RouteController(IDatabase redis, RoutingService routingService) : C
     public async Task<IActionResult> GetRoute([FromBody] RouteRequest req)
     {
         var cacheKey = $"route:{req.Source.Lat},{req.Source.Lon}:{req.Destination.Lat},{req.Destination.Lon}";
+        var lockKey = $"lock:{cacheKey}";
+
 
         var cached = await redis.StringGetAsync(cacheKey);
         if (cached.HasValue)
             return Ok(JsonSerializer.Deserialize<RouteResult>(cached!));
+
+
+        var acquired = await redis.StringSetAsync(lockKey, "1", TimeSpan.FromSeconds(30), When.NotExists);
+        if (!acquired)
+        {
+            for (int i = 0; i < 60; i++)
+            {
+                await Task.Delay(500);
+                cached = await redis.StringGetAsync(cacheKey);
+                if (cached.HasValue)
+                    return Ok(JsonSerializer.Deserialize<RouteResult>(cached!));
+            }
+            return StatusCode(503, new { message = "Route computation timed out, please retry." });
+        }
 
         try
         {
@@ -31,6 +47,10 @@ public class RouteController(IDatabase redis, RoutingService routingService) : C
         {
             Console.Error.WriteLine(ex);
             return StatusCode(500, new { message = "Route calculation failed" });
+        }
+        finally
+        {
+            await redis.KeyDeleteAsync(lockKey);
         }
     }
 }

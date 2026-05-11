@@ -24,6 +24,10 @@ bootstrap:
 	docker exec -i simplemaps_postgres psql -U ezmapsuser -d routing_db < backend/db/setup_routing.sql
 	@echo "Done."
 
+# Run k6 load test (requires k6 installed: https://k6.io/docs/get-started/installation)
+load-test:
+	k6 run testing/load-test.js
+
 # Rebuild routing topology without re-importing OSM data
 rebuild-topology:
 	@echo "Dropping existing routing tables..."

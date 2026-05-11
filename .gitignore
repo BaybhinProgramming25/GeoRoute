@@ -9,4 +9,4 @@ backend/appsettings.Development.json
 .env
 
 # Ignore data
-data/ 
+data/region.osm.pbf

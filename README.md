@@ -71,15 +71,11 @@ REDIS_CONNECTION=redis:6379
 
 | Command | Description |
 |---|---|
-| `make bootstrap` | Full fresh setup — builds, migrates, imports OSM, builds topology |
-| `make up` | Start all containers with rebuild |
-| `make down` | Stop and remove containers |
-| `make restart` | Restart all containers |
-| `make logs` | Tail container logs |
+| `make bootstrap` | Full fresh setup — builds images, runs migrations, imports OSM data, builds routing topology |
+| `make restart` | Stop and restart all containers with rebuild |
 | `make migrate` | Run EF database migrations |
-| `make setup-routing` | Run OSM import and build routing topology |
-| `make rebuild-topology` | Rebuild routing topology without re-importing OSM data |
-| `make load-test` | Run k6 load test against the route endpoint |
+| `make rebuild-topology` | Rebuild routing topology without re-importing OSM data (use after changes to `setup_routing.sql`) |
+| `make load-test` | Run k6 load test against the route endpoint (requires k6 installed) |
 
 ## Architecture
 

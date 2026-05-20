@@ -21,7 +21,6 @@ public class AuthController(UserService userService, TokenService tokenService) 
 
         var accessToken = tokenService.GenerateAccessToken(user);
         var refreshToken = tokenService.GenerateRefreshToken(user);
-        await userService.SaveRefreshTokenAsync(user.Id, refreshToken);
 
         SetRefreshCookie(refreshToken);
         return Ok(new AuthResponse(accessToken, new UserDto(user.Id, user.Username, user.Email)));
@@ -37,7 +36,6 @@ public class AuthController(UserService userService, TokenService tokenService) 
 
         var accessToken = tokenService.GenerateAccessToken(user);
         var refreshToken = tokenService.GenerateRefreshToken(user);
-        await userService.SaveRefreshTokenAsync(user.Id, refreshToken);
 
         SetRefreshCookie(refreshToken);
         return Ok(new AuthResponse(accessToken, new UserDto(user.Id, user.Username, user.Email)));
@@ -52,26 +50,20 @@ public class AuthController(UserService userService, TokenService tokenService) 
         var principal = tokenService.ValidateRefreshToken(token);
         if (principal == null) return Unauthorized(new { message = "Invalid refresh token" });
 
-        var user = await userService.GetByRefreshTokenAsync(token);
-        if (user == null) return Unauthorized(new { message = "Token not recognised" });
+        var userId = int.Parse(principal.FindFirst("id")!.Value);
+        var user = await userService.GetByIdAsync(userId);
+        if (user == null) return Unauthorized(new { message = "User not found" });
 
         var newAccess = tokenService.GenerateAccessToken(user);
         var newRefresh = tokenService.GenerateRefreshToken(user);
-        await userService.SaveRefreshTokenAsync(user.Id, newRefresh);
 
         SetRefreshCookie(newRefresh);
         return Ok(new AuthResponse(newAccess, new UserDto(user.Id, user.Username, user.Email)));
     }
 
     [HttpPost("logout")]
-    public async Task<IActionResult> Logout()
+    public IActionResult Logout()
     {
-        var token = Request.Cookies["refreshToken"];
-        if (!string.IsNullOrEmpty(token))
-        {
-            var user = await userService.GetByRefreshTokenAsync(token);
-            if (user != null) await userService.SaveRefreshTokenAsync(user.Id, null);
-        }
         Response.Cookies.Delete("refreshToken");
         return Ok(new { message = "Logged out" });
     }

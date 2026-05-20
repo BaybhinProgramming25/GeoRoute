@@ -20,14 +20,4 @@ public class UserService(AppDbContext db)
         return user;
     }
 
-    public async Task SaveRefreshTokenAsync(int userId, string? token)
-    {
-        var user = await db.Users.FindAsync(userId);
-        if (user == null) return;
-        user.RefreshToken = token;
-        await db.SaveChangesAsync();
-    }
-
-    public Task<User?> GetByRefreshTokenAsync(string token) =>
-        db.Users.FirstOrDefaultAsync(u => u.RefreshToken == token);
 }

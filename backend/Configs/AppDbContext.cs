@@ -16,7 +16,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(u => u.Username).HasColumnName("username");
             e.Property(u => u.Email).HasColumnName("email");
             e.Property(u => u.Password).HasColumnName("password");
-            e.Property(u => u.RefreshToken).HasColumnName("refresh_token");
         });
     }
 }

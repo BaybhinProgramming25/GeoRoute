@@ -1,8 +1,8 @@
-name: simplemaps
+name: georoute
 services:
 
   frontend:
-    image: simplemaps-frontend
+    image: georoute-frontend
     build:
       context: ./frontend
       dockerfile: Dockerfile
@@ -11,10 +11,10 @@ services:
     depends_on:
       - backend
     networks:
-      - simplemaps
+      - georoute
 
   backend:
-    image: simplemaps-backend
+    image: georoute-backend
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -26,11 +26,11 @@ services:
       - postgres
       - redis
     networks:
-      - simplemaps
+      - georoute
 
   postgres:
     image: pgrouting/pgrouting:latest
-    container_name: simplemaps_postgres
+    container_name: georoute_postgres
     command:
       - "postgres"
       - "-c"
@@ -50,7 +50,7 @@ services:
       - ./backend/db/init.sql:/docker-entrypoint-initdb.d/init.sql
     restart: unless-stopped
     networks:
-      - simplemaps
+      - georoute
   
   osm-routing-import:
     image: iboates/osm2pgsql:latest
@@ -66,7 +66,7 @@ services:
     profiles:
       - routing-import
     networks:
-      - simplemaps
+      - georoute
       
   redis:
     image: redis:alpine
@@ -75,7 +75,7 @@ services:
     volumes:
       - redis-data:/data
     networks:
-      - simplemaps
+      - georoute
 
 
 volumes:
@@ -83,4 +83,4 @@ volumes:
   redis-data:
   osm-data:
 networks:
-  simplemaps:
+  georoute:

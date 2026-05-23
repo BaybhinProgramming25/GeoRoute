@@ -1,4 +1,4 @@
-# SimpleMaps
+# GeoRoute
 
 A self-hosted vehicle routing application built on OpenStreetMap data. Routes are computed using A* pathfinding via pgRouting and PostGIS — no third-party routing APIs.
 

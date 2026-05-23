@@ -88,8 +88,8 @@ const Dashboard = () => {
       <aside className='dashboard-sidebar'>
         <div className='dashboard-sidebar-top'>
           <div className='sidebar-logo'>
-            <span className='sidebar-logo-icon'>SM</span>
-            <span className='sidebar-logo-text'>SimpleMaps</span>
+            <span className='sidebar-logo-icon'>GR</span>
+            <span className='sidebar-logo-text'>GeoRoute</span>
           </div>
 
           <form className='route-form' onSubmit={handleRoute}>

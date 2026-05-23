@@ -5,9 +5,9 @@ const Home = () => {
   return (
     <div className="home-page">
       <section className="home-hero">
-        <h1 className="home-hero-title">SimpleMaps</h1>
+        <h1 className="home-hero-title">GeoRoute</h1>
         <p className="home-hero-sub">
-          Simple Maps lets you query vehicle routes powered by a self-hosted routing engine
+          GeoRoute lets you query vehicle routes powered by a self-hosted routing engine
           built on OpenStreetMap data.
         </p>
         <div className="home-hero-ctas">

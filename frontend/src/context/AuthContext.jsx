@@ -3,7 +3,7 @@ import api from '../api';
 
 const AuthContext = createContext(null);
 
-const COOKIE_NAME = "simplemaps_user";
+const COOKIE_NAME = "georoute_user";
 
 const getCookie = (name) => {
   const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));

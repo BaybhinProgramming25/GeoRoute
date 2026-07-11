@@ -2,8 +2,6 @@ import http from 'k6/http';
 import { check, sleep } from 'k6';
 
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:8000';
-const EMAIL = __ENV.EMAIL || 'YOUR_USERNAME';
-const PASSWORD = __ENV.PASSWORD || 'YOUR_PASSWORD';
 
 // Test routes: [source, destination]
 const ROUTES = [
@@ -43,30 +41,13 @@ export const options = {
   },
 };
 
-export function setup() {
-  const res = http.post(
-    `${BASE_URL}/api/login`,
-    JSON.stringify({ email: EMAIL, password: PASSWORD }),
-    { headers: { 'Content-Type': 'application/json' } }
-  );
-
-  check(res, { 'login successful': (r) => r.status === 200 });
-
-  const token = res.json('accessToken');
-  if (!token) throw new Error('Failed to get access token');
-  return { token };
-}
-
-export default function ({ token }) {
+export default function () {
   const route = ROUTES[Math.floor(Math.random() * ROUTES.length)];
 
   const res = http.post(
     `${BASE_URL}/api/route`,
     JSON.stringify({ source: route[0], destination: route[1] }),
-    { headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-    }}
+    { headers: { 'Content-Type': 'application/json' } }
   );
 
   if (res.status !== 200) {

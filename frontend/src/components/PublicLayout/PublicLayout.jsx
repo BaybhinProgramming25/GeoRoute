@@ -6,12 +6,11 @@ const PublicLayout = ({ children }) => {
     <div className="public-layout">
       <header className="public-nav">
         <Link to="/" className="public-nav-logo">
-          <span className="public-nav-logo-icon">SM</span>
-          <span className="public-nav-logo-text">Simple Maps</span>
+          <span className="public-nav-logo-icon">GR</span>
+          <span className="public-nav-logo-text">GeoRoute</span>
         </Link>
         <nav className="public-nav-links">
-          <Link to="/login">Login</Link>
-          <Link to="/signup" className="public-nav-signup">Sign Up</Link>
+          <Link to="/dashboard" className="public-nav-signup">Open Map</Link>
         </nav>
       </header>
       <main className="public-main">

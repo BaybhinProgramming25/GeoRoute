@@ -1,0 +1,12 @@
+server:
+  port: 8000
+
+spring:
+  datasource:
+    url: ${ROUTING_DB_URL:jdbc:postgresql://postgres:5432/routing_db}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}

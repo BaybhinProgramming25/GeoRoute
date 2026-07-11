@@ -1,5 +1,5 @@
 import axios from "axios"
 
-const api = axios.create({ withCredentials: true })
+const api = axios.create()
 
-export default api 
+export default api

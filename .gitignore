@@ -1,8 +1,5 @@
-# Ignore various backend folders and files 
-backend/bin
-backend/obj
-backend/appsettings.json
-backend/appsettings.Development.json
+# Ignore various backend folders and files
+backend/target
 
 # Ignore envs
 */.env

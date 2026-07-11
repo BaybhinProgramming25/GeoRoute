@@ -4,7 +4,6 @@ import L from 'leaflet';
 import axios from 'axios';
 import 'leaflet/dist/leaflet.css';
 
-import { useAuth } from '../../context/AuthContext.jsx';
 import api from '../../api';
 import './Dashboard.css';
 
@@ -57,8 +56,6 @@ const RouteLayer = ({ routeData, pins }) => {
 };
 
 const Dashboard = () => {
-  const { user, logout } = useAuth();
-
   const [start, setStart] = useState('');
   const [destination, setDestination] = useState('');
   const [routeData, setRouteData] = useState(null);
@@ -128,14 +125,6 @@ const Dashboard = () => {
             )}
           </form>
 
-        </div>
-
-        <div className='dashboard-sidebar-bottom'>
-          <div className='sidebar-user'>
-            <div className='sidebar-avatar'>{user?.username?.[0].toUpperCase()}</div>
-            <span className='sidebar-username'>{user?.username}</span>
-          </div>
-          <button className='sidebar-logout' onClick={logout}>Logout</button>
         </div>
       </aside>
 

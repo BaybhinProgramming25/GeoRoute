@@ -11,8 +11,7 @@ const Home = () => {
           built on OpenStreetMap data.
         </p>
         <div className="home-hero-ctas">
-          <Link to="/signup" className="home-cta home-cta--primary">Get Started</Link>
-          <Link to="/login" className="home-cta home-cta--secondary">Log In</Link>
+          <Link to="/dashboard" className="home-cta home-cta--primary">Get Started</Link>
         </div>
       </section>
 

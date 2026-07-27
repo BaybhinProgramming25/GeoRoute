@@ -35,10 +35,14 @@ const RouteLayer = ({ routeData, pins }) => {
     const stepMarkers = routeData.steps.map((step) => {
       const coord = routeData.geometry[step.wayPoints[0]];
       if (!coord) return null;
+      // Leaflet renders string tooltips as raw HTML; road names come from
+      // community-editable OSM data, so pass a text node instead.
+      const tooltipEl = document.createElement('span');
+      tooltipEl.textContent = step.instruction;
       return L.circleMarker([coord.lat, coord.lon], {
         radius: 6, fillColor: '#fff', color: '#a855f7', weight: 2, fillOpacity: 1,
       })
-        .bindTooltip(step.instruction, { permanent: false, direction: 'top' })
+        .bindTooltip(tooltipEl, { permanent: false, direction: 'top' })
         .addTo(map);
     }).filter(Boolean);
 

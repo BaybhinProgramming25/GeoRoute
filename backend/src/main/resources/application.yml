@@ -3,7 +3,7 @@ server:
 
 spring:
   datasource:
-    url: ${ROUTING_DB_URL:jdbc:postgresql://postgres:5432/routing_db}
+    url: ${ROUTING_DB_URL:jdbc:postgresql://postgres:5432/${POSTGRES_DB:routing_db}}
     username: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
   data:

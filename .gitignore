@@ -1,9 +1,4 @@
-# Ignore various backend folders and files
-backend/target
-
-# Ignore envs
+target
 */.env
 .env
-
-# Ignore data
-data/region.osm.pbf
+data

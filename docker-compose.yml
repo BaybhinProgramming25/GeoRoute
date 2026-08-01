@@ -1,15 +1,33 @@
 name: georoute
 services:
 
+  caddy:
+    image: caddy:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - SITE_ADDRESS=${SITE_ADDRESS:-:80}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - frontend
+    restart: unless-stopped
+    mem_limit: 256m
+    networks:
+      - georoute
+
   frontend:
     image: georoute-frontend
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    ports:
-      - "5173:80"
     depends_on:
       - backend
+    restart: unless-stopped
+    mem_limit: 128m
     networks:
       - georoute
 
@@ -18,11 +36,15 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    environment:
+      - JAVA_TOOL_OPTIONS=-Xmx512m
     env_file:
       - ./backend/.env
     depends_on:
       - postgres
       - redis
+    restart: unless-stopped
+    mem_limit: 1g
     networks:
       - georoute
 
@@ -34,7 +56,7 @@ services:
       - "-c"
       - "shared_buffers=256MB"
       - "-c"
-      - "max_connections=100"
+      - "max_connections=20"
       - "-c"
       - "work_mem=16MB"
       - "-c"
@@ -45,29 +67,32 @@ services:
       - postgres-data:/var/lib/postgresql
       - ./backend/db/init.sql:/docker-entrypoint-initdb.d/init.sql
     restart: unless-stopped
+    mem_limit: 1g
     networks:
       - georoute
-  
+
   osm-routing-import:
     image: iboates/osm2pgsql:latest
     volumes:
       - ./data/region.osm.pbf:/data/region.osm.pbf
     env_file:
       - ./backend/.env
-    environment:
-      - PGPASSWORD=${POSTGRES_PASSWORD}
-    command: osm2pgsql --slim --hstore -d routing_db -H postgres -U ezmapsuser /data/region.osm.pbf
+    entrypoint: ["sh", "-c"]
+    command: ['PGPASSWORD="$$POSTGRES_PASSWORD" osm2pgsql --slim --hstore -d "$$POSTGRES_DB" -H postgres -U "$$POSTGRES_USER" /data/region.osm.pbf']
     depends_on:
       - postgres
     profiles:
       - routing-import
     networks:
       - georoute
-      
+
   redis:
     image: redis:alpine
+    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
     volumes:
       - redis-data:/data
+    restart: unless-stopped
+    mem_limit: 256m
     networks:
       - georoute
 
@@ -76,5 +101,7 @@ volumes:
   postgres-data:
   redis-data:
   osm-data:
+  caddy-data:
+  caddy-config:
 networks:
   georoute:

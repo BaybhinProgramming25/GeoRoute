@@ -93,3 +93,23 @@ CREATE INDEX ON ways (source);
 CREATE INDEX ON ways (target);
 CREATE INDEX ON ways USING GIST (geom);
 CREATE INDEX ON ways_vertices_pgr USING GIST (the_geom);
+
+-- Mark vertices on the giant connected component so nearest-node snapping
+-- never picks a node on a disconnected fragment (parking lots, gated roads),
+-- which would make every route from that node fail.
+ALTER TABLE ways_vertices_pgr ADD COLUMN main_component BOOLEAN NOT NULL DEFAULT false;
+
+CREATE TEMP TABLE comp AS
+SELECT node, component
+FROM pgr_connectedComponents(
+  'SELECT id, source, target, cost, reverse_cost FROM ways WHERE source != target'
+);
+
+WITH giant AS (
+  SELECT component FROM comp GROUP BY component ORDER BY count(*) DESC LIMIT 1
+)
+UPDATE ways_vertices_pgr v SET main_component = true
+FROM comp c, giant g
+WHERE c.node = v.id AND c.component = g.component;
+
+CREATE INDEX ON ways_vertices_pgr (main_component);

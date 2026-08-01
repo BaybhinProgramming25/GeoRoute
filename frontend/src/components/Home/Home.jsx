@@ -10,6 +10,9 @@ const Home = () => {
           GeoRoute lets you query vehicle routes powered by a self-hosted routing engine
           built on OpenStreetMap data.
         </p>
+        <p className="home-hero-note">
+          Routing is available strictly within New York State — locations outside it are not supported.
+        </p>
         <div className="home-hero-ctas">
           <Link to="/dashboard" className="home-cta home-cta--primary">Get Started</Link>
         </div>

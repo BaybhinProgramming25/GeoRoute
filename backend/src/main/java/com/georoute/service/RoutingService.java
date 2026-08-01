@@ -25,13 +25,14 @@ public class RoutingService {
     public RouteResult getRoute(Coordinate source, Coordinate destination) {
         long sourceNode = findNearestNode(source.lat(), source.lon());
         long destNode = findNearestNode(destination.lat(), destination.lon());
-        return runAStar(sourceNode, destNode);
+        return runAStar(sourceNode, destNode, source, destination);
     }
 
     private long findNearestNode(double lat, double lon) {
         String sql = """
             WITH nearby AS (
                 SELECT id, the_geom FROM ways_vertices_pgr
+                WHERE main_component
                 ORDER BY the_geom <-> ST_SetSRID(ST_Point(?, ?), 4326)
                 LIMIT 200
             )
@@ -52,7 +53,7 @@ public class RoutingService {
         }
     }
 
-    private RouteResult runAStar(long sourceNode, long destNode) {
+    private RouteResult runAStar(long sourceNode, long destNode, Coordinate source, Coordinate destination) {
         String sql = """
             SELECT
                 CASE WHEN r.node = w.source
@@ -62,14 +63,12 @@ public class RoutingService {
                 r.cost,
                 w.name,
                 ST_Length(w.geom::geography) AS distance_m
-            FROM pgr_aStar(
-                'SELECT id, source, target, cost, reverse_cost, x1, y1, x2, y2 FROM ways WHERE source != target',
-                ?, ?, true
-            ) r
+            FROM pgr_aStar(?::text, ?, ?, true) r
             JOIN ways w ON r.edge = w.id
             WHERE r.edge != -1
             ORDER BY r.seq
             """;
+        String edgesSql = edgesQueryFor(source, destination);
 
         List<Coordinate> geometry = new ArrayList<>();
         List<RouteStep> steps = new ArrayList<>();
@@ -102,12 +101,26 @@ public class RoutingService {
 
             prevHolder.clear();
             prevHolder.add(coords);
-        }, sourceNode, destNode);
+        }, edgesSql, sourceNode, destNode);
 
         if (geometry.isEmpty())
             throw new IllegalStateException("No route found between the given locations.");
 
         return new RouteResult(geometry, steps, totals[0], totals[1], false);
+    }
+
+    // Creates a boundary box using (source, destination) which significantly reduces querying pgAstar() time
+    private static String edgesQueryFor(Coordinate source, Coordinate destination) {
+        double minLat = Math.min(source.lat(), destination.lat());
+        double maxLat = Math.max(source.lat(), destination.lat());
+        double minLon = Math.min(source.lon(), destination.lon());
+        double maxLon = Math.max(source.lon(), destination.lon());
+        double latPad = Math.max(0.1, 0.25 * (maxLat - minLat));
+        double lonPad = Math.max(0.1, 0.25 * (maxLon - minLon));
+        return String.format(java.util.Locale.US,
+                "SELECT id, source, target, cost, reverse_cost, x1, y1, x2, y2 FROM ways "
+                        + "WHERE source != target AND geom && ST_MakeEnvelope(%.6f, %.6f, %.6f, %.6f, 4326)",
+                minLon - lonPad, minLat - latPad, maxLon + lonPad, maxLat + latPad);
     }
 
     private static String getInstruction(List<Coordinate> prevCoords, List<Coordinate> currCoords, String roadName) {

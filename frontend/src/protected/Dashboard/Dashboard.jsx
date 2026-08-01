@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import axios from 'axios';
@@ -88,10 +89,10 @@ const Dashboard = () => {
     <div className='dashboard'>
       <aside className='dashboard-sidebar'>
         <div className='dashboard-sidebar-top'>
-          <div className='sidebar-logo'>
+          <Link to='/' className='sidebar-logo'>
             <span className='sidebar-logo-icon'>GR</span>
             <span className='sidebar-logo-text'>GeoRoute</span>
-          </div>
+          </Link>
 
           <form className='route-form' onSubmit={handleRoute}>
             <p className='route-form-label'>Start</p>
@@ -116,6 +117,11 @@ const Dashboard = () => {
             <button className='route-submit' type='submit' disabled={loading}>
               {loading ? 'Getting route...' : 'Get Route'}
             </button>
+            {loading && (
+              <div className='route-progress' role='progressbar' aria-label='Computing route'>
+                <div className='route-progress-bar' />
+              </div>
+            )}
             {routeData && (
               <button className='route-clear' type='button' onClick={() => {
                 setStart('');

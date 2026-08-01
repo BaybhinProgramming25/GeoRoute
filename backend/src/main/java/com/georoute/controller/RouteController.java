@@ -20,9 +20,9 @@ import java.util.Map;
 @RequestMapping("/api")
 public class RouteController {
 
-    // Rough bounding box around the NYC metro area covered by the imported OSM extract
-    private static final double MIN_LAT = 40.45, MAX_LAT = 41.0;
-    private static final double MIN_LON = -74.30, MAX_LON = -73.65;
+    // Rough bounding box around New York State, the region covered by the imported OSM extract
+    private static final double MIN_LAT = 40.45, MAX_LAT = 45.02;
+    private static final double MIN_LON = -79.77, MAX_LON = -71.75;
 
     private final StringRedisTemplate redis;
     private final RoutingService routingService;
@@ -82,7 +82,7 @@ public class RouteController {
             if (!Double.isFinite(c.lat()) || !Double.isFinite(c.lon()))
                 return "Coordinates must be finite numbers.";
             if (c.lat() < MIN_LAT || c.lat() > MAX_LAT || c.lon() < MIN_LON || c.lon() > MAX_LON)
-                return "Coordinates must be within the New York City area.";
+                return "Coordinates must be within New York State.";
         }
         return null;
     }

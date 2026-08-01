@@ -30,6 +30,7 @@
   align-items: center;
   gap: 10px;
   padding: 4px;
+  text-decoration: none;
 }
 
 .sidebar-logo-icon {
@@ -141,6 +142,26 @@
 .route-submit:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.route-progress {
+  height: 4px;
+  border-radius: var(--radius-full);
+  background-color: var(--accent-subtle);
+  overflow: hidden;
+}
+
+.route-progress-bar {
+  height: 100%;
+  width: 40%;
+  border-radius: var(--radius-full);
+  background-color: var(--accent);
+  animation: route-progress-slide 1.2s ease-in-out infinite;
+}
+
+@keyframes route-progress-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(250%); }
 }
 
 .route-clear {

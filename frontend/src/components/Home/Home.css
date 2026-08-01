@@ -32,6 +32,14 @@
   line-height: 1.7;
 }
 
+.home-hero-note {
+  font-size: 14px;
+  color: var(--text-secondary);
+  max-width: 520px;
+  line-height: 1.6;
+  font-style: italic;
+}
+
 .home-hero-ctas {
   display: flex;
   gap: 12px;

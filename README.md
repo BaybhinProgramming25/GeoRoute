@@ -95,18 +95,7 @@ When `SITE_ADDRESS` is unset, Caddy serves plain HTTP on port 80 (local developm
 
 Postgres credentials are baked into the data volume on first startup — changing them later requires `docker compose down -v` and a re-import.
 
-## Architecture
-
-```
-Browser → Caddy (TLS termination) → Nginx (frontend) → React static files
-                                                     → /api/* (rate-limited) → Spring Boot Backend
-                                                                             → Redis (cache)
-                                                                             → PostgreSQL (routing)
-```
-
-All services run on an internal Docker network; only Caddy publishes ports (80/443). Every service has a memory limit and a restart policy.
-
-### Routing Pipeline
+## Routing Pipeline
 
 1. User enters start and destination addresses
 2. Frontend geocodes them via Nominatim (OSM geocoding API)
@@ -141,8 +130,3 @@ k6 run -e BASE_URL=http://localhost testing/load-test.js
 ```
 
 Note: requests go through the nginx rate limit (5 req/s per IP), so high-VU runs from a single machine will see `429`s by design. To benchmark the backend itself, temporarily raise the limit in `frontend/nginx.conf`.
-
-### Results (50 VUs, 3.5 minutes, prior to rate limiting)
-- **p95 latency**: ~10ms (Redis cache hits)
-- **Failure rate**: < 0.3%
-- **Throughput**: ~22 requests/second

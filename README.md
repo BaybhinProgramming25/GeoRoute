@@ -123,10 +123,34 @@ Edge costs are travel time in seconds based on highway type:
 
 ## Load Testing
 
-Load tests use k6 and target the `POST /api/route` endpoint with 20 unique NYC routes:
+Load tests use k6 and target the `POST /api/route` endpoint with 20 unique NYC routes, ramping from 10 to 50 concurrent virtual users over 3.5 minutes.
+
+With k6 installed:
 
 ```bash
-k6 run -e BASE_URL=http://localhost testing/load-test.js
+k6 run -e BASE_URL=https://yourdomain.com testing/load-test.js
 ```
 
-Note: requests go through the nginx rate limit (5 req/s per IP), so high-VU runs from a single machine will see `429`s by design. To benchmark the backend itself, temporarily raise the limit in `frontend/nginx.conf`.
+Or without installing anything, via Docker:
+
+```bash
+docker run --rm -i -v ./testing:/scripts:ro grafana/k6 run \
+  -e BASE_URL=https://yourdomain.com /scripts/load-test.js
+```
+
+Use `BASE_URL=http://localhost` to target a local stack instead.
+
+Note: requests go through the nginx rate limit (5 req/s per IP), so high-VU runs from a single machine will see `429`s by design — the script tracks these separately (`rate_limited`) and measures latency only on successful responses (`route_ok_duration`), so the percentiles aren't skewed by fast rate-limit rejections. To benchmark the backend itself past the limiter, temporarily raise the limit in `frontend/nginx.conf`.
+
+### Results — production (2026-08-01)
+
+| Metric | Value |
+|---|---|
+| Sample size | 5,311 requests (3.5 min, 10→50 VUs) |
+| Successful routes (200) | 1,032 |
+| Rate-limited (429) | 4,279 (80.6% — expected: single-IP run vs 5 req/s cap) |
+| Other failures | 0 |
+| Successful latency (median) | 20 ms |
+| Successful latency (p95) | 72 ms |
+| Successful latency (max) | 1.77 s (first uncached route computation) |
+| Sustained successful throughput | ~4.8 req/s (right at the per-IP limit) |
